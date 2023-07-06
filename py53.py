@@ -1,4 +1,5 @@
 import argparse
+import ipaddress
 
 import boto3
 import dns.resolver
@@ -14,9 +15,11 @@ def main():
     args = parser.parse_args()
 
     ip = get_public_ip()
-    update_route53(args, ip)
-
-    print(f"{args.domain_name} updated to {ip}")
+    if is_valid_ipv4(ip):
+        update_route53(args, ip)
+        print(f"{args.domain_name} updated to {ip}")
+    else:
+        print("Invalid ip:", ip)
 
 
 def get_public_ip() -> str:
@@ -25,6 +28,14 @@ def get_public_ip() -> str:
     query = resolver.resolve("myip.opendns.com", "A")
     for rdata in query:
         return rdata.to_text()
+
+
+def is_valid_ipv4(ip: str) -> bool:
+    try:
+        ipaddress.IPv4Address(ip)
+        return True
+    except ipaddress.AddressValueError:
+        return False
 
 
 def update_route53(args, ip: str):
